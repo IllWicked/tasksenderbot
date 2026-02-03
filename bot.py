@@ -72,28 +72,25 @@ def remove_from_cache(channel_id, task_key):
 async def load_tasks_cache(channel):
     cache = {}
     try:
-        print(f"Загружаю таски из {channel.name}...")
+        print(f"Загружаю таски из {channel.name}...", flush=True)
         async for msg in channel.history(limit=2000):
-            has_check = any(str(r.emoji) == '✅' for r in msg.reactions)
-            if has_check:
-                continue
             task_key = get_task_key(msg.content.strip())
             if task_key and task_key not in cache:
                 cache[task_key] = msg.id
         bot.tasks_cache[channel.id] = cache
-        print(f"Загружено {len(cache)} тасков из {channel.name}")
+        print(f"Загружено {len(cache)} тасков из {channel.name}", flush=True)
     except Exception as e:
-        print(f"Ошибка загрузки кэша {channel.name}: {e}")
+        print(f"Ошибка загрузки кэша {channel.name}: {e}", flush=True)
 
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
     if "Unknown interaction" in str(error):
         return
-    print(f"Ошибка команды: {error}")
+    print(f"Ошибка команды: {error}", flush=True)
 
 @bot.event
 async def on_ready():
-    print(f'Бот запущен: {bot.user}')
+    print(f'Бот запущен: {bot.user}', flush=True)
     for guild in bot.guilds:
         tasks_category = discord.utils.get(guild.categories, id=TASKS_CATEGORY_ID)
         if tasks_category:
@@ -123,7 +120,7 @@ async def on_message(message):
             continue
         
         search_variants = get_search_variants(key)
-        print(f"Архив: {filename} -> ключ: {key}")
+        print(f"Архив: {filename} -> ключ: {key}", flush=True)
         
         guild = message.guild
         tasks_category = discord.utils.get(guild.categories, id=TASKS_CATEGORY_ID)
@@ -137,7 +134,7 @@ async def on_message(message):
                 break
         
         if not task_channel:
-            print(f"Канал {message.channel.name} не найден в тасках")
+            print(f"Канал {message.channel.name} не найден в тасках", flush=True)
             continue
         
         if task_channel.id not in bot.tasks_cache:
@@ -146,15 +143,6 @@ async def on_message(message):
         cache = bot.tasks_cache.get(task_channel.id, {})
         
         found = False
-        print(f"Ищу в кэше: {search_variants}")
-        print(f"В кэше {len(cache)} записей")
-        if 'beste-wetten.com' in cache:
-            print("beste-wetten.com ЕСТЬ в кэше")
-        else:
-            print("beste-wetten.com НЕТ в кэше")
-            # Покажем похожие ключи
-            similar = [k for k in cache.keys() if 'beste' in k or 'wetten' in k]
-            print(f"Похожие ключи: {similar[:10]}")
         for variant in search_variants:
             variant_norm = normalize_for_compare(variant)
             if variant_norm in cache:
@@ -162,31 +150,28 @@ async def on_message(message):
                 try:
                     msg = await task_channel.fetch_message(msg_id)
                     
-                    has_check = any(str(r.emoji) == '✅' for r in msg.reactions)
-                    if has_check:
-                        print(f"Таск уже выполнен: {variant_norm}")
-                        remove_from_cache(task_channel.id, variant_norm)
+                    # Проверяем есть ли реакции (кроме ✅ от бота)
+                    only_bot_check = len(msg.reactions) == 1 and str(msg.reactions[0].emoji) == '✅'
+                    if not msg.reactions or only_bot_check:
+                        print(f"Таск не взят (нет реакций): {variant_norm}", flush=True)
                         continue
                     
-                    try:
-                        await msg.clear_reactions()
-                    except:
-                        pass
+                    await msg.clear_reactions()
                     await msg.add_reaction('✅')
                     await message.add_reaction('✅')
                     remove_from_cache(task_channel.id, variant_norm)
-                    print(f"Таск выполнен: {variant_norm}")
+                    print(f"Таск выполнен: {variant_norm}", flush=True)
                     found = True
                     
                 except discord.NotFound:
-                    print(f"Сообщение удалено: {variant_norm}")
+                    print(f"Сообщение удалено: {variant_norm}", flush=True)
                     remove_from_cache(task_channel.id, variant_norm)
                 except Exception as e:
-                    print(f"Ошибка: {e}")
+                    print(f"Ошибка: {e}", flush=True)
                 break
         
         if not found:
-            print(f"Таск не найден или не взят: {key}")
+            print(f"Таск не найден или не взят: {key}", flush=True)
 
 @bot.tree.command(name="reload", description="Перезагрузить кэш тасков")
 async def reload_command(interaction: discord.Interaction):
