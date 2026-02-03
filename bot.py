@@ -146,6 +146,15 @@ async def on_message(message):
         cache = bot.tasks_cache.get(task_channel.id, {})
         
         found = False
+        print(f"Ищу в кэше: {search_variants}")
+        print(f"В кэше {len(cache)} записей")
+        if 'beste-wetten.com' in cache:
+            print("beste-wetten.com ЕСТЬ в кэше")
+        else:
+            print("beste-wetten.com НЕТ в кэше")
+            # Покажем похожие ключи
+            similar = [k for k in cache.keys() if 'beste' in k or 'wetten' in k]
+            print(f"Похожие ключи: {similar[:10]}")
         for variant in search_variants:
             variant_norm = normalize_for_compare(variant)
             if variant_norm in cache:
