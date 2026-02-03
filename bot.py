@@ -168,11 +168,10 @@ async def on_message(message):
                         remove_from_cache(task_channel.id, variant_norm)
                         continue
                     
-                    if not msg.reactions:
-                        print(f"Таск не взят (нет реакций): {variant_norm}")
-                        continue
-                    
-                    await msg.clear_reactions()
+                    try:
+                        await msg.clear_reactions()
+                    except:
+                        pass
                     await msg.add_reaction('✅')
                     await message.add_reaction('✅')
                     remove_from_cache(task_channel.id, variant_norm)
